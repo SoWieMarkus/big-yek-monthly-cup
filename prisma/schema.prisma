@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  name               String
+  id                 String             @id
+  zone               String
+  results            QualifierResult[]
+  leaderboardEntries LeaderboardEntry[]
+  FinalResult        FinalResult[]
+}
+
+model Cup {
+  id          Int          @id @default(autoincrement())
+  year        Int
+  month       Int
+  qualifier   Qualifier[]
+  leaderboard Leaderboard?
+  final       Final?
+  public      Boolean
+  current     Boolean
+
+  @@unique([year, month])
+}
+
+model QualifierResult {
+  player      Player    @relation(fields: [playerId], references: [id])
+  playerId    String
+  position    Int
+  points      Int
+  qualifier   Qualifier @relation(fields: [qualifierId], references: [id], onDelete: Cascade)
+  qualifierId Int
+
+  @@id([playerId, qualifierId])
+}
+
+model Qualifier {
+  cup     Cup               @relation(fields: [cupId], references: [id], onDelete: Cascade)
+  id      Int               @id @default(autoincrement())
+  version Int
+  results QualifierResult[]
+  cupId   Int
+}
+
+model Final {
+  cup     Cup           @relation(fields: [cupId], references: [id], onDelete: Cascade)
+  id      Int           @id @default(autoincrement())
+  results FinalResult[]
+  cupId   Int           @unique
+}
+
+model FinalResult {
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String
+  position Int
+  points   Int
+  final    Final  @relation(fields: [finalId], references: [id], onDelete: Cascade)
+  finalId  Int
+
+  @@id([playerId, finalId])
+}
+
+model Leaderboard {
+  id      Int                @id @default(autoincrement())
+  cup     Cup                @relation(fields: [cupId], references: [id], onDelete: Cascade)
+  entries LeaderboardEntry[]
+  cupId   Int                @unique
+}
+
+model LeaderboardEntry {
+  player        Player      @relation(fields: [playerId], references: [id])
+  points        Int
+  qualified     Boolean
+  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  leaderboardId Int
+  playerId      String
+
+  @@id([playerId, leaderboardId])
+}
