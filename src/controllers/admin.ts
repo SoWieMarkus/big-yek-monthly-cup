@@ -1,265 +1,249 @@
 import type { RequestHandler } from "express";
-import { database } from "../database";
 import createHttpError from "http-errors";
 import Joi from "joi";
-import { calculateLeaderboard, updateLeaderboard } from "../services/leaderboard";
+import { database } from "../database";
+import { getCupDisplayName } from "../util/cup";
+import { calculateLeaderboard, updateLeaderboard } from "../util/leaderboard";
+import { validateInteger } from "../util/validate-integer";
 
 const createCupBodySchema = Joi.object({
-    year: Joi.number().integer().min(2024).required(),
-    month: Joi.number().integer().min(0).max(11).required()
+	year: Joi.number().integer().min(2024).required(),
+	month: Joi.number().integer().min(0).max(11).required(),
 });
-
-
-const displayMonth = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-
-export const getDisplayNameOfMonth = (month: number) => {
-    return displayMonth[month - 1]
-}
-
-export const getCupDisplayName = (year: number, month: number) => {
-    return `BYMC ${year}-${getDisplayNameOfMonth(month)}`;
-}
 
 export const createCup: RequestHandler = async (request, response, next) => {
+	try {
+		const parsedBody = createCupBodySchema.validate(request.body);
 
-    try {
-        const parsedBody = createCupBodySchema.validate(request.body);
+		if (parsedBody.error) {
+			throw createHttpError(400, parsedBody.error);
+		}
 
-        if (parsedBody.error) {
-            return next(createHttpError(400, parsedBody.error));
-        }
+		const { year, month } = parsedBody.value;
 
-        const cups = await database.cup.findMany();
+		const cups = await database.cup.findMany();
+		const current = cups.length === 0;
+		const name = getCupDisplayName(year, month);
 
-        const { year, month } = parsedBody.value;
-        const cup = await database.cup.create({
-            data: {
-                year,
-                month,
-                public: false,
-                current: cups.length === 0,
-                name: getCupDisplayName(year, month)
-            }
-        });
+		const cup = await database.cup.create({
+			data: {
+				year,
+				month,
+				current,
+				name,
+				public: false,
+			},
+		});
 
-        await database.qualifier.createMany({
-            data: [
-                {
-                    version: 1,
-                    cupId: cup.id,
-                },
-                {
-                    version: 2,
-                    cupId: cup.id,
-                },
-                {
-                    version: 3,
-                    cupId: cup.id,
-                }
-            ]
-        })
+		const cupId = cup.id;
 
-        await database.final.create({
-            data: {
-                cupId: cup.id
-            }
-        })
+		await database.qualifier.createMany({
+			data: [
+				{ version: 1, cupId },
+				{ version: 2, cupId },
+				{ version: 3, cupId },
+			],
+		});
 
-        await database.leaderboard.create({
-            data: {
-                cupId: cup.id
-            }
-        })
+		await database.final.create({ data: { cupId } });
+		await database.leaderboard.create({ data: { cupId } });
 
-        response.json(cup).status(200);
-    } catch (error) {
-        console.error(error);
-        next(createHttpError(500, "Error while creating cup."));
-    }
-}
+		response.json(cup).status(200);
+	} catch (error) {
+		console.error(error);
+		next(createHttpError(500, "Error while creating cup."));
+	}
+};
 
 const cupVisibilityBodySchema = Joi.object({
-    visible: Joi.boolean().required()
+	visible: Joi.boolean().required(),
 });
 
-export const setCupVisibility: RequestHandler = async (request, response, next) => {
-    try {
-        const parsedBody = cupVisibilityBodySchema.validate(request.body);
+export const setCupVisibility: RequestHandler = async (
+	request,
+	response,
+	next,
+) => {
+	const { cupId } = request.params;
+	try {
+		const parsedBody = cupVisibilityBodySchema.validate(request.body);
 
-        if (parsedBody.error) {
-            return next(createHttpError(400, parsedBody.error));
-        }
-        const { id } = request.params;
-        const { visible } = parsedBody.value;
-        const cup = await database.cup.update({
-            where: {
-                id: Number.parseInt(id),
-            },
-            data: {
-                public: visible
-            }
-        })
-        response.json(cup).status(200);
-    } catch (error) {
-        console.error(error);
-        next(createHttpError(500, "Error while updating cup visibility."));
-    }
-}
+		if (parsedBody.error) {
+			throw createHttpError(400, parsedBody.error);
+		}
+		const id = validateInteger(cupId);
+		const { visible } = parsedBody.value;
+
+		const cup = await database.cup.update({
+			where: { id },
+			data: { public: visible },
+		});
+		response.json(cup).status(200);
+	} catch (error) {
+		console.error(error);
+		next(
+			createHttpError(
+				500,
+				`Error while updating visibility of cup "${cupId}".`,
+			),
+		);
+	}
+};
 
 const cupNameBodySchema = Joi.object({
-    name: Joi.string().required().min(1).max(100)
+	name: Joi.string().required().min(1).max(100),
 });
 
 export const renameCup: RequestHandler = async (request, response, next) => {
-    try {
-        const parsedBody = cupNameBodySchema.validate(request.body);
+	const { cupId } = request.params;
+	try {
+		const parsedBody = cupNameBodySchema.validate(request.body);
 
-        if (parsedBody.error) {
-            return next(createHttpError(400, parsedBody.error));
-        }
-        const { id } = request.params;
-        const { name } = parsedBody.value;
-        const cup = await database.cup.update({
-            where: {
-                id: Number.parseInt(id),
-            },
-            data: {
-                name: name
-            }
-        })
-        response.json(cup).status(200);
-    } catch (error) {
-        console.error(error);
-        next(createHttpError(500, "Error while updating cup name."));
-    }
-}
+		if (parsedBody.error) {
+			throw createHttpError(400, parsedBody.error);
+		}
+		const idAsNumber = validateInteger(cupId);
+		const { name } = parsedBody.value;
+		const cup = await database.cup.update({
+			where: { id: idAsNumber },
+			data: { name },
+		});
+		response.json(cup).status(200);
+	} catch (error) {
+		console.error(error);
+		next(
+			createHttpError(500, `Error while updating the name of cup "${cupId}".`),
+		);
+	}
+};
 
-export const deleteCup: RequestHandler = (request, response, next) => {
-    const { id } = request.params;
-    database.cup.delete({
-        where: {
-            id: Number.parseInt(id),
-        },
-    }).then(cup => response.json(cup).status(200)).catch(error => {
-        console.error(error);
-        next(createHttpError(500, "Error while deleting cup."))
-    });
-}
+export const deleteCup: RequestHandler = async (request, response, next) => {
+	const { cupId } = request.params;
+	try {
+		const id = validateInteger(cupId);
+		const cup = await database.cup.delete({
+			where: { id },
+		});
+		response.json(cup).status(200);
+	} catch (error) {
+		console.error(error);
+		next(createHttpError(500, `Error while deleting cup ${cupId}`));
+	}
+};
 
-export const setCupToCurrent: RequestHandler = async (request, response, next) => {
-    const { id } = request.params;
+export const setCupToCurrent: RequestHandler = async (
+	request,
+	response,
+	next,
+) => {
+	const { cupId } = request.params;
+	try {
+		const id = validateInteger(cupId);
+		await database.cup.updateMany({
+			data: { current: false },
+		});
+		const cup = await database.cup.update({
+			where: { id },
+			data: { current: true },
+		});
+		response.json(cup).status(200);
+	} catch (error) {
+		console.error(error);
+		next(createHttpError(500, `Error while deleting cup ${cupId}.`));
+	}
+};
 
-    try {
-        await database.cup.updateMany({
-            data: {
-                current: false
-            }
-        })
-        const cup = await database.cup.update({
-            where: {
-                id: Number.parseInt(id),
-            },
-            data: {
-                current: true
-            }
-        });
-        response.json(cup).status(200)
-    } catch {
-        next(createHttpError(500, "Error while deleting cup."))
-    }
-
-
-}
-
-export const getCupDetails: RequestHandler = (request, response, next) => {
-    const { id } = request.params;
-    database.cup.findUnique({
-        where: {
-            id: Number.parseInt(id)
-        },
-        include: {
-            qualifier: {
-                include: {
-                    _count: {
-                        select: { results: true },
-                    },
-                },
-            },
-            final: {
-                include: {
-                    _count: {
-                        select: { results: true },
-                    },
-                },
-            },
-            leaderboard: {
-                include: {
-                    _count: {
-                        select: { entries: true },
-                    },
-                },
-            },
-        }
-    })
-        .then(cup => response.json(cup).status(200))
-        .catch(error => {
-            console.error(error);
-            next(createHttpError(500, `Can't query cup with if ${id}`));
-
-        })
-}
+export const getCupDetails: RequestHandler = async (
+	request,
+	response,
+	next,
+) => {
+	const { cupId } = request.params;
+	try {
+		const id = validateInteger(cupId);
+		const cup = database.cup.findUnique({
+			where: { id },
+			include: {
+				qualifier: {
+					include: { _count: { select: { results: true } } },
+				},
+				final: {
+					include: { _count: { select: { results: true } } },
+				},
+				leaderboard: {
+					include: { _count: { select: { entries: true } } },
+				},
+			},
+		});
+		response.json(cup).status(200);
+	} catch (error) {
+		console.error(error);
+		next(createHttpError(500, `Can't query cup with if ${cupId}`));
+	}
+};
 
 const recordSchema = Joi.array().items(
-    Joi.number().required(),
-    Joi.number().required(),
-    Joi.string().required(),
-    Joi.string().required(),
-    Joi.string().required()
+	Joi.number().required(),
+	Joi.number().required(),
+	Joi.string().required(),
+	Joi.string().required(),
+	Joi.string().required(),
 );
 
-const dataSchema = Joi.array().items(recordSchema).min(1)
+const dataSchema = Joi.array().items(recordSchema).min(1);
 
-export const updateQualifier: RequestHandler = (request, response, next) => {
-    const { qualifierId } = request.params;
-    const parsedBody = dataSchema.validate(request.body);
-    if (parsedBody.error) {
-        return next(createHttpError(400, parsedBody.error));
-    }
-    calculateLeaderboard(Number.parseInt(qualifierId), parsedBody.value).then(_ => {
-        response.status(200).json({});
-    }).catch(() => {
-        next(createHttpError(400, "Failed to parse data to leaderboard."))
-    });
+export const updateQualifier: RequestHandler = async (
+	request,
+	response,
+	next,
+) => {
+	const { qualifierId } = request.params;
+	try {
+		const qualifierIdAsNumber = validateInteger(qualifierId);
+		const parsedBody = dataSchema.validate(request.body);
+		if (parsedBody.error) {
+			throw createHttpError(400, parsedBody.error);
+		}
+		await calculateLeaderboard(qualifierIdAsNumber, parsedBody.value);
+		response.status(200).json({ success: true });
+	} catch (error) {
+		console.error(error);
+		next(createHttpError(400, "Failed to parse data to leaderboard."));
+	}
+};
 
-}
+export const clearQualifier: RequestHandler = async (
+	request,
+	response,
+	next,
+) => {
+	const { qualifierId } = request.params;
+	try {
+		const qualifierIdAsNumber = validateInteger(qualifierId);
+		await database.qualifierResult.deleteMany({
+			where: {
+				qualifierId: qualifierIdAsNumber,
+			},
+		});
 
-export const clearQualifier: RequestHandler = (request, response, next) => {
-    const { qualifierId } = request.params;
-
-    database.qualifierResult.deleteMany({
-        where: {
-            qualifierId: Number.parseInt(qualifierId)
-        }
-    }).then(async _ => {
-        await updateLeaderboard(Number.parseInt(qualifierId))
-        response.status(200).json({});
-    }).catch(() => {
-        next(createHttpError(400, "Failed to parse data to leaderboard."))
-    });
-
-}
+		await updateLeaderboard(Number.parseInt(qualifierId));
+		response.status(200).json({ success: true });
+	} catch (error) {
+		console.error(error);
+		next(
+			createHttpError(500, `Failed to clear data of qualifier ${qualifierId}.`),
+		);
+	}
+};
 
 export const getAllCups: RequestHandler = (request, response, next) => {
-    database.cup.findMany({
-        orderBy: [
-            {
-                year: "desc"
-            },
-            {
-                month: "desc"
-            },
-        ]
-    })
-        .then(cups => response.json(cups).status(200))
-        .catch(error => next(createHttpError(500, error.message)))
-}
+	try {
+		const cups = database.cup.findMany({
+			orderBy: [{ year: "desc" }, { month: "desc" }],
+		});
+		response.json(cups).status(200);
+	} catch (error) {
+		console.error(error);
+		next(createHttpError(500, "Failed to load cups."));
+	}
+};

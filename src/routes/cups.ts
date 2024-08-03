@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get("/", CupsController.getAllCups);
 router.get("/current", CupsController.getCurrentCup);
-router.get("/qualifier/:id", CupsController.getQualifierResults);
-router.get("/leaderboard/:id", CupsController.getCupLeaderboard);
+router.get("/qualifier/:qualifierId", CupsController.getQualifierResults);
+router.get("/leaderboard/:cupId", CupsController.getCupLeaderboard);
 
 export default router;
