@@ -1,3 +1,4 @@
 node_modules
 .env
-prisma/bymc.db  
+prisma/bymc.db
+dist
