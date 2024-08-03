@@ -13,5 +13,6 @@ router.delete("/cup/delete/:id", requiresAuthentication, AdminController.deleteC
 router.post("/cup/public/:id", requiresAuthentication, AdminController.setCupVisibility);
 router.post("/cup/current/:id", requiresAuthentication, AdminController.setCupToCurrent);
 router.get("/cup/:id", requiresAuthentication, AdminController.getCupDetails);
+router.post("/cup/rename/:id", requiresAuthentication, AdminController.renameCup);
 
 export default router;

@@ -31,6 +31,7 @@ model Cup {
   final       Final?
   public      Boolean
   current     Boolean
+  name        String
 
   @@unique([year, month])
 }

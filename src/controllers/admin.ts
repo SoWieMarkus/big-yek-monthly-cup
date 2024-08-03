@@ -9,6 +9,17 @@ const createCupBodySchema = Joi.object({
     month: Joi.number().integer().min(0).max(11).required()
 });
 
+
+const displayMonth = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+export const getDisplayNameOfMonth = (month: number) => {
+    return displayMonth[month - 1]
+}
+
+export const getCupDisplayName = (year: number, month: number) => {
+    return `BYMC ${year}-${getDisplayNameOfMonth(month)}`;
+}
+
 export const createCup: RequestHandler = async (request, response, next) => {
 
     try {
@@ -23,7 +34,11 @@ export const createCup: RequestHandler = async (request, response, next) => {
         const { year, month } = parsedBody.value;
         const cup = await database.cup.create({
             data: {
-                year, month, public: false, current: cups.length === 0
+                year,
+                month,
+                public: false,
+                current: cups.length === 0,
+                name: getCupDisplayName(year, month)
             }
         });
 
@@ -88,6 +103,34 @@ export const setCupVisibility: RequestHandler = async (request, response, next) 
     } catch (error) {
         console.error(error);
         next(createHttpError(500, "Error while updating cup visibility."));
+    }
+}
+
+const cupNameBodySchema = Joi.object({
+    name: Joi.string().required().min(1).max(100)
+});
+
+export const renameCup: RequestHandler = async (request, response, next) => {
+    try {
+        const parsedBody = cupNameBodySchema.validate(request.body);
+
+        if (parsedBody.error) {
+            return next(createHttpError(400, parsedBody.error));
+        }
+        const { id } = request.params;
+        const { name } = parsedBody.value;
+        const cup = await database.cup.update({
+            where: {
+                id: Number.parseInt(id),
+            },
+            data: {
+                name: name
+            }
+        })
+        response.json(cup).status(200);
+    } catch (error) {
+        console.error(error);
+        next(createHttpError(500, "Error while updating cup name."));
     }
 }
 

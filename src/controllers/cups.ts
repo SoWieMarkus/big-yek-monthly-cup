@@ -30,6 +30,9 @@ export const getCurrentCup: RequestHandler = async (request, response, next) => 
             select: {
                 id: true,
                 qualifier: true,
+                year: true,
+                month: true,
+                name: true,
                 leaderboard: {
                     include: {
                         entries: {
