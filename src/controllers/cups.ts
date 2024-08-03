@@ -59,7 +59,7 @@ export const getCurrentCup: RequestHandler = async (request, response, next) => 
 
         response.json(cups[0]).status(200)
     } catch (error) {
-        next(createHttpError(500, (error as any).message))
+        next(createHttpError(500, "Failed to get current cup."))
         console.error(error);
     }
 }
