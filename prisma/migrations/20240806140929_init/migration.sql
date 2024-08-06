@@ -66,6 +66,7 @@ CREATE TABLE "LeaderboardEntry" (
     "points" INTEGER NOT NULL,
     "qualified" BOOLEAN NOT NULL,
     "leaderboardId" INTEGER NOT NULL,
+    "position" INTEGER NOT NULL,
     "playerId" TEXT NOT NULL,
 
     PRIMARY KEY ("playerId", "leaderboardId"),
@@ -75,6 +76,9 @@ CREATE TABLE "LeaderboardEntry" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Cup_year_month_key" ON "Cup"("year", "month");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Qualifier_version_cupId_key" ON "Qualifier"("version", "cupId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Final_cupId_key" ON "Final"("cupId");

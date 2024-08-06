@@ -48,6 +48,7 @@ export const getCurrentCup: RequestHandler = async (
 								player: true,
 								points: true,
 								qualified: true,
+								position: true
 							},
 						},
 					},

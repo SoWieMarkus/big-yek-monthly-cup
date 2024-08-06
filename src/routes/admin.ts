@@ -6,29 +6,39 @@ const router = express.Router();
 
 router.post("/cup/create", requiresAuthentication, AdminController.createCup);
 router.post(
-	"/cup/qualifier/update/:qualifierId",
+	"/cup/:cupId/qualifier/:qualifierId/update",
 	requiresAuthentication,
 	AdminController.updateQualifier,
 );
 router.delete(
-	"/cup/qualifier/clear/:qualifierId",
+	"/cup/:cupId/qualifier/:qualifierId/clear",
 	requiresAuthentication,
 	AdminController.clearQualifier,
 );
+router.delete(
+	"/cup/:cupId/qualifier/:qualifierId/delete",
+	requiresAuthentication,
+	AdminController.deleteQualifier,
+)
+router.post(
+	"/cup/:cupId/qualifier/create",
+	requiresAuthentication,
+	AdminController.createQualifier,
+)
 
 router.get("/cups", requiresAuthentication, AdminController.getAllCups);
 router.delete(
-	"/cup/delete/:cupId",
+	"/cup/:cupId/delete",
 	requiresAuthentication,
 	AdminController.deleteCup,
 );
 router.post(
-	"/cup/public/:cupId",
+	"/cup/:cupId/public",
 	requiresAuthentication,
 	AdminController.setCupVisibility,
 );
 router.post(
-	"/cup/current/:cupId",
+	"/cup/:cupId/current",
 	requiresAuthentication,
 	AdminController.setCupToCurrent,
 );
@@ -38,9 +48,10 @@ router.get(
 	AdminController.getCupDetails,
 );
 router.post(
-	"/cup/rename/:cupId",
+	"/cup/:cupId/rename",
 	requiresAuthentication,
 	AdminController.renameCup,
 );
+
 
 export default router;

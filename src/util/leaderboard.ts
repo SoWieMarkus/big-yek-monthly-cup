@@ -14,7 +14,7 @@ const ZONE = 4;
 
 const POINT_LIMIT = 6969;
 
-export const calculateLeaderboard = async (
+export const updateResults = async (
 	qualifierId: number,
 	content: DataArray,
 ) => {
@@ -50,39 +50,33 @@ export const calculateLeaderboard = async (
 			};
 		}),
 	});
-
-	await updateLeaderboard(qualifierId);
 };
 
-export const updateLeaderboard = async (qualifierId: number) => {
-	const qualifier = await database.qualifier.findUnique({
+export const updateLeaderboard = async (cupId: number) => {
+	const cup = await database.cup.findUnique({
 		where: {
-			id: qualifierId,
+			id: cupId,
 		},
 		include: {
-			cup: {
-				include: {
-					leaderboard: true,
-				},
-			},
-		},
+			leaderboard: true,
+		}
 	});
-	if (qualifier === null)
-		throw new Error(`No Qualifier with id ${qualifierId}.`);
-	if (qualifier.cup.leaderboard === null)
+	if (cup === null)
+		throw new Error(`No Cup with id ${cupId}.`);
+	if (cup.leaderboard === null)
 		throw new Error("Cup has no leaderboard! YEK?");
 
 	const allResultsOfCup = await database.qualifierResult.findMany({
 		where: {
 			qualifier: {
-				cupId: qualifier.cup.id,
+				cupId: cup.id,
 			},
 		},
 	});
 
 	await database.leaderboardEntry.deleteMany({
 		where: {
-			leaderboardId: qualifier.cup.leaderboard.id,
+			leaderboardId: cup.leaderboard.id,
 		},
 	});
 
@@ -94,7 +88,8 @@ export const updateLeaderboard = async (qualifierId: number) => {
 			qualified: false,
 			points: 0,
 			playerId: id,
-			leaderboardId: qualifier.cup.leaderboard.id,
+			leaderboardId: cup.leaderboard.id,
+			position: 0
 		};
 
 		let points = result.points;
@@ -119,9 +114,30 @@ export const updateLeaderboard = async (qualifierId: number) => {
 		map[id] = entry;
 	}
 
+	const leaderboard = Object.values(map);
+	leaderboard.sort((a, b) => b.points - a.points);
+
+	let currentRank = 1;
+	let previousAmount: number | undefined = undefined;
+	let rankCount = 0;
+
+	for (const entry of leaderboard) {
+		if (entry.qualified) {
+			rankCount++;
+		} else if (previousAmount !== entry.points) {
+			currentRank += rankCount;
+			rankCount = 1;
+		} else {
+			rankCount++;
+		}
+
+		entry.position = currentRank;
+		previousAmount = entry.points;
+	}
+
 	await database.leaderboardEntry.createMany({
 		data: Object.values(map),
 	});
 
-	Log.complete(`Updated leaderboard of cup ${qualifier.cup.id}`);
+	Log.complete(`Updated leaderboard of cup ${cup.id}`);
 };

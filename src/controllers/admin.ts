@@ -1,9 +1,9 @@
 import type { RequestHandler } from "express";
-import createHttpError from "http-errors";
-import Joi from "joi";
+import createHttpError, { isHttpError } from "http-errors";
+import Joi, { version } from "joi";
 import { database } from "../database";
 import { getCupDisplayName } from "../util/cup";
-import { calculateLeaderboard, updateLeaderboard } from "../util/leaderboard";
+import { updateResults, updateLeaderboard } from "../util/leaderboard";
 import { validateInteger } from "../util/validate-integer";
 
 const createCupBodySchema = Joi.object({
@@ -51,7 +51,7 @@ export const createCup: RequestHandler = async (request, response, next) => {
 		response.json(cup).status(200);
 	} catch (error) {
 		console.error(error);
-		next(createHttpError(500, "Error while creating cup."));
+		next(isHttpError(error) ? error : createHttpError(500, "Error while creating cup."));
 	}
 };
 
@@ -81,7 +81,7 @@ export const setCupVisibility: RequestHandler = async (
 		response.json(cup).status(200);
 	} catch (error) {
 		console.error(error);
-		next(
+		next(isHttpError(error) ? error :
 			createHttpError(
 				500,
 				`Error while updating visibility of cup "${cupId}".`,
@@ -111,7 +111,7 @@ export const renameCup: RequestHandler = async (request, response, next) => {
 		response.json(cup).status(200);
 	} catch (error) {
 		console.error(error);
-		next(
+		next(isHttpError(error) ? error :
 			createHttpError(500, `Error while updating the name of cup "${cupId}".`),
 		);
 	}
@@ -127,7 +127,7 @@ export const deleteCup: RequestHandler = async (request, response, next) => {
 		response.json(cup).status(200);
 	} catch (error) {
 		console.error(error);
-		next(createHttpError(500, `Error while deleting cup ${cupId}`));
+		next(isHttpError(error) ? error : createHttpError(500, `Error while deleting cup ${cupId}`));
 	}
 };
 
@@ -149,7 +149,7 @@ export const setCupToCurrent: RequestHandler = async (
 		response.json(cup).status(200);
 	} catch (error) {
 		console.error(error);
-		next(createHttpError(500, `Error while deleting cup ${cupId}.`));
+		next(isHttpError(error) ? error : createHttpError(500, `Error while deleting cup ${cupId}.`));
 	}
 };
 
@@ -161,7 +161,7 @@ export const getCupDetails: RequestHandler = async (
 	const { cupId } = request.params;
 	try {
 		const id = validateInteger(cupId);
-		const cup = database.cup.findUnique({
+		const cup = await database.cup.findUnique({
 			where: { id },
 			include: {
 				qualifier: {
@@ -178,7 +178,7 @@ export const getCupDetails: RequestHandler = async (
 		response.json(cup).status(200);
 	} catch (error) {
 		console.error(error);
-		next(createHttpError(500, `Can't query cup with if ${cupId}`));
+		next(isHttpError(error) ? error : createHttpError(500, `Can't query cup with if ${cupId}`));
 	}
 };
 
@@ -197,18 +197,21 @@ export const updateQualifier: RequestHandler = async (
 	response,
 	next,
 ) => {
-	const { qualifierId } = request.params;
+	const { qualifierId, cupId } = request.params;
 	try {
 		const qualifierIdAsNumber = validateInteger(qualifierId);
+		const cupIdAsNumber = validateInteger(cupId);
+
 		const parsedBody = dataSchema.validate(request.body);
 		if (parsedBody.error) {
 			throw createHttpError(400, parsedBody.error);
 		}
-		await calculateLeaderboard(qualifierIdAsNumber, parsedBody.value);
+		await updateResults(qualifierIdAsNumber, parsedBody.value);
+		await updateLeaderboard(cupIdAsNumber)
 		response.status(200).json({ success: true });
 	} catch (error) {
 		console.error(error);
-		next(createHttpError(400, "Failed to parse data to leaderboard."));
+		next(isHttpError(error) ? error : createHttpError(400, "Failed to parse data to leaderboard."));
 	}
 };
 
@@ -217,33 +220,78 @@ export const clearQualifier: RequestHandler = async (
 	response,
 	next,
 ) => {
-	const { qualifierId } = request.params;
+	const { qualifierId, cupId } = request.params;
 	try {
 		const qualifierIdAsNumber = validateInteger(qualifierId);
+		const cupIdAsNumber = validateInteger(cupId);
 		await database.qualifierResult.deleteMany({
 			where: {
 				qualifierId: qualifierIdAsNumber,
 			},
 		});
 
-		await updateLeaderboard(Number.parseInt(qualifierId));
+		await updateLeaderboard(cupIdAsNumber);
 		response.status(200).json({ success: true });
 	} catch (error) {
 		console.error(error);
-		next(
+		next(isHttpError(error) ? error :
 			createHttpError(500, `Failed to clear data of qualifier ${qualifierId}.`),
 		);
 	}
 };
 
-export const getAllCups: RequestHandler = (request, response, next) => {
+export const getAllCups: RequestHandler = async (request, response, next) => {
 	try {
-		const cups = database.cup.findMany({
+		const cups = await database.cup.findMany({
 			orderBy: [{ year: "desc" }, { month: "desc" }],
 		});
 		response.json(cups).status(200);
 	} catch (error) {
 		console.error(error);
-		next(createHttpError(500, "Failed to load cups."));
+		next(isHttpError(error) ? error : createHttpError(500, "Failed to load cups."));
 	}
 };
+
+const cupQualifierBodySchema = Joi.object({
+	version: Joi.number().required().min(1).max(100),
+});
+
+export const createQualifier: RequestHandler = async (request, response, next) => {
+	try {
+		const { cupId } = request.params;
+		const id = validateInteger(cupId);
+		const parsedBody = cupQualifierBodySchema.validate(request.body);
+		if (parsedBody.error) {
+			throw createHttpError(400, parsedBody.error);
+		}
+
+		const { version } = parsedBody.value;
+		const qualifier = await database.qualifier.create({
+			data: {
+				cupId: id,
+				version
+			}
+		});
+		response.json(qualifier).status(200);
+	} catch (error) {
+		console.error(error);
+		next(isHttpError(error) ? error : createHttpError(500, "Failed create qualifier."));
+	}
+}
+
+export const deleteQualifier: RequestHandler = async (request, response, next) => {
+	try {
+		const { qualifierId, cupId } = request.params;
+		const qualifierIdAsNumber = validateInteger(qualifierId);
+		const cupIdAsNumber = validateInteger(cupId);
+
+		await database.qualifier.delete({
+			where: { id: qualifierIdAsNumber }
+		});
+		await updateLeaderboard(cupIdAsNumber);
+		response.json({ success: true }).status(200);
+	} catch (error) {
+		console.error(error);
+		next(isHttpError(error) ? error : createHttpError(500, "Failed create qualifier."));
+	}
+}

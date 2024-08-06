@@ -19,7 +19,7 @@ model Player {
   zone               String
   results            QualifierResult[]
   leaderboardEntries LeaderboardEntry[]
-  FinalResult        FinalResult[]
+  finalResults       FinalResult[]
 }
 
 model Cup {
@@ -53,6 +53,8 @@ model Qualifier {
   version Int
   results QualifierResult[]
   cupId   Int
+
+  @@unique([version, cupId])
 }
 
 model Final {
@@ -86,6 +88,7 @@ model LeaderboardEntry {
   qualified     Boolean
   leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
   leaderboardId Int
+  position      Int
   playerId      String
 
   @@id([playerId, leaderboardId])
