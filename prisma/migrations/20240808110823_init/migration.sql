@@ -21,8 +21,9 @@ CREATE TABLE "QualifierResult" (
     "position" INTEGER NOT NULL,
     "points" INTEGER NOT NULL,
     "qualifierId" INTEGER NOT NULL,
+    "server" INTEGER NOT NULL,
 
-    PRIMARY KEY ("playerId", "qualifierId"),
+    PRIMARY KEY ("playerId", "qualifierId", "server"),
     CONSTRAINT "QualifierResult_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "QualifierResult_qualifierId_fkey" FOREIGN KEY ("qualifierId") REFERENCES "Qualifier" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );

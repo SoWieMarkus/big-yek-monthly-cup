@@ -43,8 +43,9 @@ model QualifierResult {
   points      Int
   qualifier   Qualifier @relation(fields: [qualifierId], references: [id], onDelete: Cascade)
   qualifierId Int
+  server      Int
 
-  @@id([playerId, qualifierId])
+  @@id([playerId, qualifierId, server])
 }
 
 model Qualifier {
