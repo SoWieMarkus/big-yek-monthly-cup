@@ -190,7 +190,10 @@ const recordSchema = Joi.array().items(
 	Joi.string().required(),
 );
 
-const dataSchema = Joi.array().items(recordSchema).min(1);
+const dataSchema = Joi.object({
+	data: Joi.array().items(recordSchema).min(1).required(),
+	server: Joi.number().min(1).required()
+});
 
 export const updateQualifier: RequestHandler = async (
 	request,
@@ -206,7 +209,7 @@ export const updateQualifier: RequestHandler = async (
 		if (parsedBody.error) {
 			throw createHttpError(400, parsedBody.error);
 		}
-		await updateResults(qualifierIdAsNumber, parsedBody.value);
+		await updateResults(qualifierIdAsNumber, parsedBody.value.server, parsedBody.value.data);
 		await updateLeaderboard(cupIdAsNumber)
 		response.status(200).json({ success: true });
 	} catch (error) {

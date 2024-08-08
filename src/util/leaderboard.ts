@@ -1,4 +1,4 @@
-import type { LeaderboardEntry } from "@prisma/client";
+import type { LeaderboardEntry, QualifierResult } from "@prisma/client";
 import { Log } from ".";
 import { database } from "../database";
 
@@ -12,10 +12,12 @@ const NAME = 2;
 const LOGIN = 3;
 const ZONE = 4;
 
-const POINT_LIMIT = 6969;
+const POINT_LIMIT_SERVER_ONE = 6969;
+const POINT_LIMIT_SERVER_TWO = 5000;
 
 export const updateResults = async (
 	qualifierId: number,
+	server: number,
 	content: DataArray,
 ) => {
 	for (const row of content) {
@@ -38,6 +40,7 @@ export const updateResults = async (
 	await database.qualifierResult.deleteMany({
 		where: {
 			qualifierId,
+			server
 		},
 	});
 	await database.qualifierResult.createMany({
@@ -47,10 +50,33 @@ export const updateResults = async (
 				points: row[POINTS],
 				position: row[POSITION],
 				qualifierId,
+				server
 			};
 		}),
 	});
 };
+
+export const getPointsByResult = (result: QualifierResult) => {
+	if (result.server === 1) {
+		if (result.position >= 1 && result.position <= 3) return 50000;
+		if (result.position === 4) return 15000;
+		if (result.position === 5) return 10000;
+		if (result.points >= POINT_LIMIT_SERVER_ONE) return 7500;
+		return result.points;
+	}
+	if (result.server === 2) {
+		if (result.position === 1) return 6500;
+		if (result.position === 2) return 6000;
+		if (result.position === 3) return 5500;
+		if (result.points >= POINT_LIMIT_SERVER_TWO) return 5000;
+		return result.points;
+	}
+	return 0;
+}
+
+export const isQualified = (result: QualifierResult) => {
+	return result.position >= 1 && result.position <= 3 && result.server === 1;
+}
 
 export const updateLeaderboard = async (cupId: number) => {
 	const cup = await database.cup.findUnique({
@@ -91,20 +117,8 @@ export const updateLeaderboard = async (cupId: number) => {
 			leaderboardId: cup.leaderboard.id,
 			position: 0
 		};
-
-		let points = result.points;
-		let qualified = false;
-		if (result.position >= 1 && result.position <= 3) {
-			qualified = true;
-			points = 50000;
-		} else if (result.position === 4) {
-			points = 15000;
-		} else if (result.position === 5) {
-			points = 10000;
-		} else if (result.points >= POINT_LIMIT) {
-			points = 7500;
-		}
-
+		const points = getPointsByResult(result);
+		const qualified = isQualified(result);
 		entry.points += points;
 
 		if (qualified) {
