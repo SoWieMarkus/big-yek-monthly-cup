@@ -13,7 +13,7 @@ const LOGIN = 3;
 const ZONE = 4;
 
 const POINT_LIMIT_SERVER_ONE = 6969;
-const POINT_LIMIT_SERVER_TWO = 5000;
+const POINT_LIMIT_SERVER_TWO = 4500;
 
 export const updateResults = async (
 	qualifierId: number,
