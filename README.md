@@ -4,6 +4,8 @@ Welcome to the Big YEK Monthly Cup management system! This backend application i
 
 The tournament features weekly qualifiers leading up to an monthly final. With this project, you can create and manage multiple editions of the cup, store results, and calculate a leaderboard to determine which players qualify for the finals.
 
+See the frontend application build with Angular [here](https://github.com/SoWieMarkus/big-yek-monthly-cup-frontend).
+
 ## Features
 - **Edition Management**: Easily create and manage multiple editions of the tournament.
 _ **Results Storage**: Store and organize participant results from qualifiers and finals.
