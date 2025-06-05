@@ -2,7 +2,7 @@
   <img src="packages/frontend/public/header.jpeg" alt="BYMC Banner" style="width:100%;" />
 </p>
 
-# BYMC - Big YEK Monthly Cup
+# BYMC - BIG YEK Monthly Cup
 
 > [!NOTE]
 > The BYMC Monthly Cup has started partnering with [eCircuitMania](https://ecircuitmania.com/), and this project will no longer be maintained or updated.  
