@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  name               String
+  id                 String             @id
+  zone               String
+  results            QualifierResult[]
+  leaderboardEntries LeaderboardEntry[]
+  finalResults       FinalResult[]
+}
+
+model Cup {
+  id          String       @id @default(uuid())
+  year        Int
+  month       Int
+  qualifier   Qualifier[]
+  leaderboard Leaderboard?
+  final       Final?
+  public      Boolean
+  current     Boolean
+  name        String
+
+  @@unique([year, month])
+}
+
+model QualifierResult {
+  player      Player    @relation(fields: [playerId], references: [id])
+  playerId    String
+  position    Int
+  points      Int
+  qualifier   Qualifier @relation(fields: [qualifierId], references: [id], onDelete: Cascade)
+  qualifierId String
+  server      Int
+
+  @@id([playerId, qualifierId, server])
+}
+
+model Qualifier {
+  cup     Cup               @relation(fields: [cupId], references: [id], onDelete: Cascade)
+  id      String            @id @default(uuid())
+  version Int
+  results QualifierResult[]
+  cupId   String
+
+  @@unique([version, cupId])
+}
+
+model Final {
+  cup     Cup           @relation(fields: [cupId], references: [id], onDelete: Cascade)
+  id      String        @id @default(uuid())
+  results FinalResult[]
+  cupId   String        @unique
+}
+
+model FinalResult {
+  player   Player @relation(fields: [playerId], references: [id])
+  playerId String
+  position Int
+  points   Int
+  final    Final  @relation(fields: [finalId], references: [id], onDelete: Cascade)
+  finalId  String
+
+  @@id([playerId, finalId])
+}
+
+model Leaderboard {
+  id      String             @id @default(uuid())
+  cup     Cup                @relation(fields: [cupId], references: [id], onDelete: Cascade)
+  entries LeaderboardEntry[]
+  cupId   String             @unique
+}
+
+model LeaderboardEntry {
+  player        Player      @relation(fields: [playerId], references: [id])
+  points        Int
+  qualified     Boolean
+  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  leaderboardId String
+  position      Int
+  playerId      String
+
+  @@id([playerId, leaderboardId])
+}

@@ -1,0 +1,55 @@
+<h2 mat-dialog-title>Upload CSV Results</h2>
+<mat-dialog-content>
+  <div class="drop-zone" (dragover)="onDragOverFile($event)" (drop)="onDropFile($event)">
+    <p>Drag and drop your CSV file here</p>
+    <p>or</p>
+    <input type="file" (change)="onChangeFile($event)" accept=".csv" />
+  </div>
+
+  @if (results().length > 0) {
+  <h3>Reorder the Top5</h3>
+
+  <div cdkDropList (cdkDropListDropped)="onDropResult($event)">
+    <table>
+      <thead>
+        <th>
+          Position
+        </th>
+        <th>
+          Points
+        </th>
+        <th>
+          Name
+        </th>
+        <th>
+          Login
+        </th>
+        <th>
+          Zone
+        </th>
+      </thead>
+      @for (result of top5Results(); track result[3]) {
+      <tr class="draggable-row" cdkDrag>
+        @for (column of result; track $index) {
+        <td>{{column}}</td>
+        }
+      </tr>
+      }
+
+      @for (result of restResults(); track result[3]) {
+      <tr>
+        @for (column of result; track $index) {
+        <td>{{column}}</td>
+        }
+      </tr>
+      }
+    </table>
+  </div>
+  }
+
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <button mat-button (click)="onClose()">Close</button>
+  <button class="trackmania-button transform" (click)="onUpload()" [disabled]="!results().length">Upload</button>
+</mat-dialog-actions>
