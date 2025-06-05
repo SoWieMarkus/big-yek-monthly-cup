@@ -1,0 +1,60 @@
+.drop-zone {
+  border: 2px dashed #bbb;
+  border-radius: 5px;
+  padding: 30px;
+  text-align: center;
+  color: #bbb;
+  background-color: rgb(187, 187, 187, 0.05);
+  box-sizing: border-box;
+}
+
+table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+}
+
+th {
+  background-color: #167654;
+  color: white;
+  padding: 12px;
+  text-align: center;
+}
+
+td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #ccc;
+}
+
+tr:last-child {
+  td {
+    border: 0;
+  }
+}
+
+.draggable-row {
+  cursor: move;
+  background-color: #00fbc5;
+  border: 1px solid #ddd;
+  transition: background-color 0.3s ease;
+}
+
+.draggable-row:hover {
+  background-color: #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cdk-drag-preview {
+  background-color: #d9eaff;
+  border: 1px solid #a0c4ff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: rotate(3deg);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+  border: 2px dashed #007bff;
+}

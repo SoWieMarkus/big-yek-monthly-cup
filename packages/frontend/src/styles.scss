@@ -1,0 +1,63 @@
+/* You can add global styles to this file, and also import other style files */
+body,
+html {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  height: 100%;
+}
+
+h1 {
+  text-align: center;
+}
+
+h2 {
+  text-align: center;
+}
+
+body {
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.transform {
+  transform: skew(-8deg);
+}
+
+.trackmania-div {
+  background-color: #167654;
+  border-radius: .5em 0;
+
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.trackmania-button {
+  background-color: #167654;
+  border-radius: .5em 0;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.trackmania-button:hover {
+  background-color: #2D8A69;
+}
+
+.trackmania-button:disabled {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1000px) {
+  body {
+    background: white;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    background: white;
+  }
+}

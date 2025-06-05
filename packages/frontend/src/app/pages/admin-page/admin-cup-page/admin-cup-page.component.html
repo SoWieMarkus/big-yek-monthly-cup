@@ -1,0 +1,33 @@
+<button class="trackmania-button transform" [routerLink]="['/admin/dashboard']"><mat-icon>arrow_back</mat-icon></button>
+
+@if (loading()) {
+<app-loading />
+} @else {
+@if (cup() !== null) {
+<h2>{{header()}}</h2>
+<hr>
+<h3>Qualifier</h3>
+<div class="qualifier-container ">
+  <label for="version">Version:</label><br>
+  <input min="1" max="100" class="trackmania-button transform" type="number" id="version" name="version"
+    [(ngModel)]="version">
+  <button class="trackmania-button transform" style="margin-left: 0.5rem;" (click)="addQualifier()">Create</button>
+</div>
+@for(qualifier of qualifier(); track qualifier.id) {
+<div class="qualifier transform">
+  <button mat-icon-button (click)="deleteQualifier(qualifier)"><mat-icon>delete</mat-icon></button>
+  <button class="trackmania-button" (click)="openUploadDialog(qualifier.id)">Update</button>
+  <button class="trackmania-button" style="margin: 0 5px;" (click)="clear(qualifier.id)">Clear</button>
+  <span style="transform: skew(8deg);">Weekly Qualifier
+    #{{qualifier.version}} |
+    <span style="font-weight: bold;"
+      [style.color]="getColorByAmount(qualifier._count.results)">{{qualifier._count.results}}</span>
+    Results</span>
+</div>
+}
+<hr>
+}
+@else {
+<p>Couldn't load details of cup</p>
+}
+}

@@ -1,0 +1,35 @@
+<h1>BIG YEK Monthly Cup - Standings</h1>
+
+@if(cup() !== null) {
+<h2>{{name()}}</h2>
+@if(leaderboard().length > 0) {
+<table>
+  <thead>
+    <th style="border-radius: 0 0 0 0;">Position</th>
+    <th>
+      Player
+    </th>
+    <th>Points</th>
+  </thead>
+  @for (entry of leaderboard(); track entry.player.id) {
+  <tr>
+    <td>
+      {{getPosition(entry)}}
+    </td>
+    <td>
+      {{entry.player.name}}
+    </td>
+    <td>
+      {{getPoints(entry)}}
+    </td>
+  </tr>
+  }
+</table>
+}
+} @else {
+<app-loading />
+}
+
+@if(leaderboard().length === 0 && cup() !== null) {
+<p style="text-align: center;">Currently there are no results for this cup.</p>
+}
