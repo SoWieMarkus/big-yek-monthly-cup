@@ -5,7 +5,7 @@
 # BYMC - BIG YEK Monthly Cup
 
 > [!NOTE]
-> The BYMC Monthly Cup has started partnering with [eCircuitMania](https://ecircuitmania.com/), and this project will no longer be maintained or updated.  
+> BYMC has started partnering with [eCircuitMania](https://ecircuitmania.com/), and this project will no longer be maintained or updated.  
 > Thank you to everyone who supported and contributed!
 
 > [!NOTE]
